@@ -334,8 +334,8 @@ const StaticString s_MongoDriverBsonODM_fieldName("__pclass");
 /* {{{ MongoDriver\BSON\Binary */
 void VariantToBsonConverter::_convertBinary(bson_t *bson, const char *key, Object v)
 {
-	String data = v.o_get(s_MongoBsonBinary_data, false, s_MongoBsonBinary_className).toString();
-	int64_t type = v.o_get(s_MongoBsonBinary_type, false, s_MongoBsonBinary_className).toInt64();
+	String data = v->o_get(s_MongoBsonBinary_data, false, s_MongoBsonBinary_className).toString();
+	int64_t type = v->o_get(s_MongoBsonBinary_type, false, s_MongoBsonBinary_className).toInt64();
 
 	bson_append_binary(bson, key, -1, (bson_subtype_t) type, (const unsigned char*) data.c_str(), data.length());
 }
@@ -354,8 +354,8 @@ void VariantToBsonConverter::_convertDecimal128(bson_t *bson, const char *key, O
 void VariantToBsonConverter::_convertJavascript(bson_t *bson, const char *key, Object v)
 {
 	bson_t *scope_bson;
-	String code = v.o_get(s_MongoBsonJavascript_code, false, s_MongoBsonJavascript_className).toString();
-	auto scope = v.o_get(s_MongoBsonJavascript_scope, false, s_MongoBsonJavascript_className);
+	String code = v->o_get(s_MongoBsonJavascript_code, false, s_MongoBsonJavascript_className).toString();
+	auto scope = v->o_get(s_MongoBsonJavascript_scope, false, s_MongoBsonJavascript_className);
 
 	if (scope.isObject() || scope.isArray()) {
 		/* Convert scope to document */
@@ -403,8 +403,8 @@ void VariantToBsonConverter::_convertObjectID(bson_t *bson, const char *key, Obj
 
 void VariantToBsonConverter::_convertRegex(bson_t *bson, const char *key, Object v)
 {
-	String regex = v.o_get(s_MongoBsonRegex_pattern, false, s_MongoBsonRegex_className).toString();
-	String flags = v.o_get(s_MongoBsonRegex_flags, false, s_MongoBsonRegex_className).toString();
+	String regex = v->o_get(s_MongoBsonRegex_pattern, false, s_MongoBsonRegex_className).toString();
+	String flags = v->o_get(s_MongoBsonRegex_flags, false, s_MongoBsonRegex_className).toString();
 
 	bson_append_regex(bson, key, -1, regex.c_str(), flags.c_str());
 }
@@ -413,8 +413,8 @@ void VariantToBsonConverter::_convertRegex(bson_t *bson, const char *key, Object
 /* {{{ MongoDriver\BSON\Timestamp */
 void VariantToBsonConverter::_convertTimestamp(bson_t *bson, const char *key, Object v)
 {
-	int32_t timestamp = v.o_get(s_MongoBsonTimestamp_timestamp, false, s_MongoBsonTimestamp_className).toInt32();
-	int32_t increment = v.o_get(s_MongoBsonTimestamp_increment, false, s_MongoBsonTimestamp_className).toInt32();
+	int32_t timestamp = v->o_get(s_MongoBsonTimestamp_timestamp, false, s_MongoBsonTimestamp_className).toInt32();
+	int32_t increment = v->o_get(s_MongoBsonTimestamp_increment, false, s_MongoBsonTimestamp_className).toInt32();
 
 	bson_append_timestamp(bson, key, -1, timestamp, increment);
 }
@@ -422,7 +422,7 @@ void VariantToBsonConverter::_convertTimestamp(bson_t *bson, const char *key, Ob
 /* {{{ MongoDriver\BSON\UTCDateTime */
 void VariantToBsonConverter::_convertUTCDateTime(bson_t *bson, const char *key, Object v)
 {
-	int64_t milliseconds = v.o_get(s_MongoBsonUTCDateTime_milliseconds, false, s_MongoBsonUTCDateTime_className).toInt64();
+	int64_t milliseconds = v->o_get(s_MongoBsonUTCDateTime_milliseconds, false, s_MongoBsonUTCDateTime_className).toInt64();
 
 	bson_append_date_time(bson, key, -1, milliseconds);
 }
@@ -1018,7 +1018,7 @@ bool BsonToVariantConverter::convert(Variant *v)
 		m_state.zchild.exists(s_MongoDriverBsonODM_fieldName) &&
 		m_state.zchild[s_MongoDriverBsonODM_fieldName].isObject() &&
 		m_state.zchild[s_MongoDriverBsonODM_fieldName].toObject().instanceof(s_MongoBsonBinary_className) &&
-		m_state.zchild[s_MongoDriverBsonODM_fieldName].toObject().o_get(s_MongoBsonBinary_type, false, s_MongoBsonBinary_className).toInt64() == 0x80
+		m_state.zchild[s_MongoDriverBsonODM_fieldName].toObject()->o_get(s_MongoBsonBinary_type, false, s_MongoBsonBinary_className).toInt64() == 0x80
 	) {
 		havePclass = true;
 	}
@@ -1035,7 +1035,7 @@ bool BsonToVariantConverter::convert(Variant *v)
 		/* If we have a __pclass, and the class exists, and the class
 		 * implements MongoDB\BSON\Persitable, we use that class name. */
 		if (havePclass) {
-			String class_name = m_state.zchild[s_MongoDriverBsonODM_fieldName].toObject().o_get(
+			String class_name = m_state.zchild[s_MongoDriverBsonODM_fieldName].toObject()->o_get(
 				s_MongoBsonBinary_data, false, s_MongoBsonBinary_className
 			).toString();
 
@@ -1096,7 +1096,7 @@ bool BsonToVariantConverter::convert(Variant *v)
 	} else if (havePclass) {
 		static Class* c_class;
 
-		String class_name = m_state.zchild[s_MongoDriverBsonODM_fieldName].toObject().o_get(
+		String class_name = m_state.zchild[s_MongoDriverBsonODM_fieldName].toObject()->o_get(
 			s_MongoBsonBinary_data, false, s_MongoBsonBinary_className
 		).toString();
 		TypedValue args[1] = { *(Variant(m_state.zchild)).asCell() };

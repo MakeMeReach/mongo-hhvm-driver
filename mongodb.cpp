@@ -53,7 +53,7 @@ struct MongoDBGlobals {
 	int log_method; /* 0 for off, 1 for on */
 };
 
-IMPLEMENT_THREAD_LOCAL(MongoDBGlobals, s_mongodb_globals);
+THREAD_LOCAL(MongoDBGlobals, s_mongodb_globals);
 
 void hippo_log_handler(mongoc_log_level_t log_level, const char *log_domain, const char *message, void *user_data)
 {
