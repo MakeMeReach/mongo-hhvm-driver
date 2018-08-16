@@ -43,6 +43,8 @@ String HHVM_FUNCTION(MongoDBBsonFromPHP, const Variant &data)
 	memcpy(data_s, bson_get_data(bson), bson->len);
 	s.setSize(bson->len);
 
+	bson_destroy(bson);
+
 	return s;
 }
 
