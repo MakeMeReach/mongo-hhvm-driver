@@ -286,6 +286,9 @@ HPHP::Object Utils::doExecuteCommand(const char *db, mongoc_client_t *client, in
 
 	/* Handle server hint */
 	if (server_id > 0 && !mongoc_cursor_set_hint(cursor, server_id)) {
+		bson_clear(&bson);
+		mongoc_cursor_destroy(cursor);
+
 		throw throwRunTimeException("Could not set cursor server_id");
 	}
 
@@ -300,6 +303,7 @@ HPHP::Object Utils::doExecuteCommand(const char *db, mongoc_client_t *client, in
 		 * to create a writable copy of the const bson_t we fetched above. */
 		cmd_cursor = mongoc_cursor_new_from_command_reply(client, bson_copy(mongoc_cursor_current(cursor)), mongoc_cursor_get_hint(cursor));
 		mongoc_cursor_destroy(cursor);
+		bson_clear(&bson);
 
 		/* This throws an exception upon error */
 		hippo_advance_cursor_and_check_for_error(cmd_cursor);
@@ -327,6 +331,9 @@ HPHP::Object Utils::doExecuteQuery(const HPHP::String ns, mongoc_client_t *clien
 
 	/* Prepare */
 	if (!MongoDriver::Utils::splitNamespace(ns, &dbname, &collname)) {
+		free(dbname);
+		free(collname);
+
 		throw throwInvalidArgumentException("Invalid namespace provided: " + ns);
 	}
 
@@ -366,9 +373,15 @@ HPHP::Object Utils::doExecuteQuery(const HPHP::String ns, mongoc_client_t *clien
 	/* Run query and get cursor */
 	cursor = mongoc_collection_find_with_opts(collection, bfilter, bopts, read_preference);
 	mongoc_collection_destroy(collection);
+	free(dbname);
+	free(collname);
+	bson_clear(&bfilter);
+	bson_clear(&bopts);
 
 	/* Handle server hint */
 	if (server_id > 0 && !mongoc_cursor_set_hint(cursor, server_id)) {
+		mongoc_cursor_destroy(cursor);
+
 		throw throwRunTimeException("Could not set cursor server_id");
 	}
 
