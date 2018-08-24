@@ -43,7 +43,7 @@ String HHVM_FUNCTION(MongoDBBsonFromPHP, const Variant &data)
 	memcpy(data_s, bson_get_data(bson), bson->len);
 	s.setSize(bson->len);
 
-	bson_destroy(bson);
+	bson_clear(&bson);
 
 	return s;
 }
@@ -62,8 +62,11 @@ Variant HHVM_FUNCTION(MongoDBBsonFromJson, const String &data)
 		memcpy(data_s, bson_get_data(&bson), bson.len);
 		s.setSize(bson.len);
 
+		bson_destroy(&bson);
+
 		return s;
 	} else {
+		bson_destroy(&bson);
 		throw MongoDriver::Utils::throwUnexpectedValueException(error.domain == BSON_ERROR_JSON ? error.message : "Error parsing JSON");
 		return Variant();
 	}
