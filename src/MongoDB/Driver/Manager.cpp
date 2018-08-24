@@ -222,6 +222,7 @@ static bool hippo_mongo_driver_manager_apply_rp(mongoc_uri_t *uri, const Array o
 		b_tags = bson_new();
 		converter.convert(b_tags);
 		mongoc_read_prefs_set_tags(new_rp, b_tags);
+		bson_destroy(b_tags);
 	} else if (options.exists(s_MongoDBDriverManager_readPreferenceTags) && options[s_MongoDBDriverManager_readPreferenceTags].isArray()) {
 		const Array a_tags = hippo_mongo_driver_readpreference_prep_tagsets(options[s_MongoDBDriverManager_readPreferenceTags].toArray());
 
@@ -235,6 +236,7 @@ static bool hippo_mongo_driver_manager_apply_rp(mongoc_uri_t *uri, const Array o
 		b_tags = bson_new();
 		converter.convert(b_tags);
 		mongoc_read_prefs_set_tags(new_rp, b_tags);
+		bson_destroy(b_tags);
 	}
 
 	/* Handle maxStalenessSeconds, and make sure it is not combined with PRIMARY readPreference */
