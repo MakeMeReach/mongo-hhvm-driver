@@ -32,6 +32,11 @@ class Pool
 			m_client = mongoc_client_new_from_uri(uri);
 		}
 
+		~Pool()
+		{
+		    mongoc_client_destroy(m_client);
+		}
+
 		static std::string CreateHash(const mongoc_uri_t *uri, const Array &options, const Array &driverOptions);
 
 		static mongoc_client_t *GetClient(std::string hash, mongoc_uri_t *uri);
