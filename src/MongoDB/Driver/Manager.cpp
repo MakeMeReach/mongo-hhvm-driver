@@ -137,7 +137,6 @@ static bool hippo_mongo_driver_manager_apply_rc(mongoc_uri_t *uri, const Array o
 
 static bool hippo_mongo_driver_manager_apply_rp(mongoc_uri_t *uri, const Array options)
 {
-	mongoc_read_prefs_t *new_rp;
 	const mongoc_read_prefs_t *old_rp;
 	const char *rp_str = NULL;
 	bson_t *b_tags;
@@ -164,7 +163,8 @@ static bool hippo_mongo_driver_manager_apply_rp(mongoc_uri_t *uri, const Array o
 		return true;
 	}
 
-	new_rp = mongoc_read_prefs_copy(old_rp);
+	std::unique_ptr<mongoc_read_prefs_t, decltype(&mongoc_read_prefs_destroy)> u_new_rp(mongoc_read_prefs_copy(old_rp), &mongoc_read_prefs_destroy);
+	mongoc_read_prefs_t *new_rp = u_new_rp.get();
 
 	if (options.exists(s_MongoDBDriverManager_slaveok) && options[s_MongoDBDriverManager_slaveok].isBoolean()) {
 		mongoc_read_prefs_set_mode(new_rp, MONGOC_READ_SECONDARY_PREFERRED);
@@ -190,7 +190,6 @@ static bool hippo_mongo_driver_manager_apply_rp(mongoc_uri_t *uri, const Array o
 			mongoc_read_prefs_set_mode(new_rp, MONGOC_READ_NEAREST);
 		} else {
 			throw MongoDriver::Utils::throwInvalidArgumentException("Unsupported readPreference value: '" + Variant(rp_str).toString() + "'");
-			mongoc_read_prefs_destroy(new_rp);
 
 			return false;
 		}
@@ -205,7 +204,6 @@ static bool hippo_mongo_driver_manager_apply_rp(mongoc_uri_t *uri, const Array o
 		)
 	) {
 		throw MongoDriver::Utils::throwInvalidArgumentException("Primary read preference mode conflicts with tags");
-		mongoc_read_prefs_destroy(new_rp);
 		return false;
 	}
 
@@ -214,7 +212,6 @@ static bool hippo_mongo_driver_manager_apply_rp(mongoc_uri_t *uri, const Array o
 
 		if (!hippo_mongo_driver_readpreference_are_valid(a_tags)) {
 			throw MongoDriver::Utils::throwInvalidArgumentException("Read preference tags must be an array of zero or more documents");
-			mongoc_read_prefs_destroy(new_rp);
 			return false;
 		}
 
@@ -228,7 +225,6 @@ static bool hippo_mongo_driver_manager_apply_rp(mongoc_uri_t *uri, const Array o
 
 		if (!hippo_mongo_driver_readpreference_are_valid(a_tags)) {
 			throw MongoDriver::Utils::throwInvalidArgumentException("Read preference tags must be an array of zero or more documents");
-			mongoc_read_prefs_destroy(new_rp);
 			return false;
 		}
 
@@ -273,13 +269,11 @@ static bool hippo_mongo_driver_manager_apply_rp(mongoc_uri_t *uri, const Array o
 	 * but we'll check anyway in case additional validation is implemented. */
 	if (!mongoc_read_prefs_is_valid(new_rp)) {
 		throw MongoDriver::Utils::throwInvalidArgumentException("Read preference is not valid");
-		mongoc_read_prefs_destroy(new_rp);
 
 		return false;
 	}
 
 	mongoc_uri_set_read_prefs_t(uri, new_rp);
-	mongoc_read_prefs_destroy(new_rp);
 
 	return true;
 }
@@ -287,7 +281,6 @@ static bool hippo_mongo_driver_manager_apply_rp(mongoc_uri_t *uri, const Array o
 static bool hippo_mongo_driver_manager_apply_wc(mongoc_uri_t *uri, const Array options)
 {
 	int32_t wtimeoutms;
-	mongoc_write_concern_t *new_wc;
 	const mongoc_write_concern_t *old_wc;
 
 	if (!(old_wc = mongoc_uri_get_write_concern(uri))) {
@@ -311,7 +304,8 @@ static bool hippo_mongo_driver_manager_apply_wc(mongoc_uri_t *uri, const Array o
 
 	wtimeoutms = mongoc_write_concern_get_wtimeout(old_wc);
 
-	new_wc = mongoc_write_concern_copy(old_wc);
+	std::unique_ptr<mongoc_write_concern_t, decltype(&mongoc_write_concern_destroy)> u_new_wc(mongoc_write_concern_copy(old_wc), &mongoc_write_concern_destroy);
+	mongoc_write_concern_t *new_wc = u_new_wc.get();
 
 	if (options.exists(s_MongoDBDriverManager_safe) && options[s_MongoDBDriverManager_safe].isBoolean()) {
 		mongoc_write_concern_set_w(new_wc, options[s_MongoDBDriverManager_safe].toBoolean() ? 1 : MONGOC_WRITE_CONCERN_W_UNACKNOWLEDGED);
@@ -341,7 +335,6 @@ static bool hippo_mongo_driver_manager_apply_wc(mongoc_uri_t *uri, const Array o
 						break;
 					}
 					throw MongoDriver::Utils::throwInvalidArgumentException("Unsupported w value: " + Variant(value).toString());
-					mongoc_write_concern_destroy(new_wc);
 
 					return false;
 			}
@@ -370,7 +363,6 @@ static bool hippo_mongo_driver_manager_apply_wc(mongoc_uri_t *uri, const Array o
 
 		if (w == MONGOC_WRITE_CONCERN_W_UNACKNOWLEDGED || w == MONGOC_WRITE_CONCERN_W_ERRORS_IGNORED) {
 			throw MongoDriver::Utils::throwInvalidArgumentException("Journal conflicts with w value: " + Variant(w).toString());
-			mongoc_write_concern_destroy(new_wc);
 
 			return false;
 		}
@@ -381,13 +373,11 @@ static bool hippo_mongo_driver_manager_apply_wc(mongoc_uri_t *uri, const Array o
 	 * implemented. */
 	if (!mongoc_write_concern_is_valid(new_wc)) {
 		throw MongoDriver::Utils::throwInvalidArgumentException("Write concern is not valid");
-		mongoc_write_concern_destroy(new_wc);
 
 		return false;
 	}
 
 	mongoc_uri_set_write_concern(uri, new_wc);
-	mongoc_write_concern_destroy(new_wc);
 
 	return true;
 }
@@ -629,7 +619,7 @@ static void command_succeeded(const mongoc_apm_command_succeeded_t *event)
 	o_event->o_set(s_MongoDriverMonitoringCommandSucceededEvent_reply, v_reply, s_MongoDriverMonitoringCommandSucceededEvent_className);
 
 	TypedValue args[1] = { *(Variant(o_event)).asCell() };
-	
+
 #if HIPPO_HHVM_VERSION >= 31700
 	g_context->invokeFuncFew(
 		m, obj_context,
@@ -681,7 +671,7 @@ static void command_failed(const mongoc_apm_command_failed_t *event)
 	o_event->o_set(s_MongoDriverMonitoringCommandFailedEvent_error, MongoDriver::Utils::throwExceptionFromBsonError(&b_error), s_MongoDriverMonitoringCommandFailedEvent_className);
 
 	TypedValue args[1] = { *(Variant(o_event)).asCell() };
-	
+
 #if HIPPO_HHVM_VERSION >= 31700
 	g_context->invokeFuncFew(
 		m, obj_context,
@@ -726,6 +716,7 @@ void HHVM_METHOD(MongoDBDriverManager, __construct, const String &dsn, const Arr
 	} else {
 		uri = hippo_mongo_driver_manager_make_uri(dsn.c_str(), options);
 	}
+	std::unique_ptr<mongoc_uri_t, decltype(&mongoc_uri_destroy)> u_uri(uri, &mongoc_uri_destroy);
 
 	data->m_hash = Pool::CreateHash(uri, options, driverOptions);
 

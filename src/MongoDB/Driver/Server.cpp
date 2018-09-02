@@ -64,12 +64,12 @@ hippo_server_description_type_map_t hippo_server_description_type_map[HIPPO_SERV
 Object hippo_mongo_driver_server_create_from_id(mongoc_client_t *client, uint32_t server_id)
 {
 	static Class* c_server;
-	mongoc_server_description_t *sd;
 
 	c_server = Unit::lookupClass(s_MongoDriverServer_className.get());
 	Object tmp = Object{c_server};
 
-	sd = mongoc_client_get_server_description(client, server_id);
+	std::unique_ptr<mongoc_server_description_t, decltype(&mongoc_server_description_destroy)> u_sd(mongoc_client_get_server_description(client, server_id), &mongoc_server_description_destroy);
+	mongoc_server_description_t *sd = u_sd.get();
 
 	if (!sd) {
 		throw MongoDriver::Utils::CreateAndConstruct(
@@ -186,9 +186,10 @@ String HHVM_METHOD(MongoDBDriverServer, getHost)
 Array HHVM_METHOD(MongoDBDriverServer, getInfo)
 {
 	MongoDBDriverServerData* data = Native::data<MongoDBDriverServerData>(this_);
-	mongoc_server_description_t *sd;
+	std::unique_ptr<mongoc_server_description_t, decltype(&mongoc_server_description_destroy)> u_sd(mongoc_client_get_server_description(data->m_client, data->m_server_id), &mongoc_server_description_destroy);
+	mongoc_server_description_t *sd = u_sd.get();
 
-	if ((sd = mongoc_client_get_server_description(data->m_client, data->m_server_id))) {
+	if (sd) {
 		const bson_t       *is_master = mongoc_server_description_ismaster(sd);
 
 		Variant v;
@@ -201,7 +202,6 @@ Array HHVM_METHOD(MongoDBDriverServer, getInfo)
 			BsonToVariantConverter convertor(bson_get_data(is_master), is_master->len, options);
 			convertor.convert(&v);
 		} catch (...) {
-			mongoc_server_description_destroy(sd);
 			throw;
 		}
 
@@ -249,9 +249,10 @@ int64_t HHVM_METHOD(MongoDBDriverServer, getPort)
 Array HHVM_METHOD(MongoDBDriverServer, getTags)
 {
 	MongoDBDriverServerData* data = Native::data<MongoDBDriverServerData>(this_);
-	mongoc_server_description_t *sd;
+	std::unique_ptr<mongoc_server_description_t, decltype(&mongoc_server_description_destroy)> u_sd(mongoc_client_get_server_description(data->m_client, data->m_server_id), &mongoc_server_description_destroy);
+	mongoc_server_description_t *sd = u_sd.get();
 
-	if ((sd = mongoc_client_get_server_description(data->m_client, data->m_server_id))) {
+	if (sd) {
 		const bson_t       *is_master = mongoc_server_description_ismaster(sd);
 
 		Variant v_last_is_master;
@@ -265,7 +266,6 @@ Array HHVM_METHOD(MongoDBDriverServer, getTags)
 			BsonToVariantConverter convertor(bson_get_data(is_master), is_master->len, options);
 			convertor.convert(&v_last_is_master);
 		} catch (...) {
-			mongoc_server_description_destroy(sd);
 			throw;
 		}
 
@@ -275,7 +275,6 @@ Array HHVM_METHOD(MongoDBDriverServer, getTags)
 			return a_last_is_master[s_MongoDriverServer_tags].toArray();
 		}
 
-		mongoc_server_description_destroy(sd);
 		a_last_is_master = Array();
 		return a_last_is_master;
 	}
