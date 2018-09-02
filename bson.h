@@ -117,6 +117,9 @@ class BsonToVariantConverter
 {
 	public:
 		BsonToVariantConverter(const unsigned char *data, int data_len, hippo_bson_conversion_options_t options);
+		~BsonToVariantConverter() {
+			bson_reader_destroy(m_reader);
+		};
 		bool convert(Variant *v);
 	private:
 		bson_reader_t *m_reader;

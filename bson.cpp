@@ -993,7 +993,6 @@ bool BsonToVariantConverter::convert(Variant *v)
 	}
 
 	if (!bson_iter_init(&iter, b)) {
-		bson_reader_destroy(m_reader);
 		throw MongoDriver::Utils::throwUnexpectedValueException("Could not initialize BSON iterator");
 		return false;
 	}
@@ -1002,8 +1001,6 @@ bool BsonToVariantConverter::convert(Variant *v)
 	m_state.options = m_options;
 
 	if (bson_iter_visit_all(&iter, &hippo_bson_visitors, &m_state) || iter.err_off) {
-		bson_reader_destroy(m_reader);
-
 		throw MongoDriver::Utils::throwUnexpectedValueException("Detected corrupt BSON data");
 	}
 
@@ -1163,12 +1160,10 @@ bool BsonToVariantConverter::convert(Variant *v)
 	}
 
 	if (bson_reader_read(m_reader, &eof) || !eof) {
-		bson_reader_destroy(m_reader);
 		throw MongoDriver::Utils::throwUnexpectedValueException("Reading document did not exhaust input buffer");
 		return false;
 	}
 
-	bson_reader_destroy(m_reader);
 	return true;
 }
 /* }}} */
