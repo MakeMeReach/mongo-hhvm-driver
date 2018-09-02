@@ -34,7 +34,7 @@ class MongoDBDriverWriteResultData
 		static Class* getClass();
 
 		void sweep() {
-			/* do nothing */
+			mongoc_write_concern_destroy(m_write_concern);
 		}
 
 		~MongoDBDriverWriteResultData() {
